@@ -7,8 +7,6 @@ import streamlit as st
 st.set_page_config(page_title="Simulador de Órbitas NC", layout="wide")
 st.title("🌌 Simulador de Órbitas Não Comutativas (NC)")
 
-plt.style.use('dark_background')  # Fundo preto
-
 # --- Potencial e órbitas para partícula massiva não comutativa ---
 
 def potencial_massiva_nc(r, l, theta):
@@ -22,7 +20,7 @@ def orbita_massiva_nc(l, E, rst, norbit, theta):
     valid = E - Veff_vals > 0 
     if not np.any(valid):
         st.error("Energia abaixo do mínimo do potencial.")
-        return None, None, None, None, None, None
+        return None, None, None, None
     last = np.where(valid)[0][-1]
     u = u_vals[:last+1]
     Veff = Veff_vals[:last+1]
@@ -35,9 +33,7 @@ def orbita_massiva_nc(l, E, rst, norbit, theta):
     r = 1/u
     x = r * np.cos(theta_arr * norbit)
     y = r * np.sin(theta_arr * norbit)
-    r_max = np.max(r)
-    r_min = np.min(r)
-    return r, Veff, x, y, r_max, r_min
+    return r, Veff, x, y
 
 # --- Potencial e órbitas para fóton não comutativo ---
 
@@ -78,47 +74,37 @@ with col1:
 
 with col2:
     if corpo == "Partícula Massiva":
-        l = st.slider("Momento angular l", 0.1, 7.3, 4.0, 0.1)
-        E = st.slider("Energia total E", 0.5, 2.0, 0.5, 0.01)
+        l = st.slider("Momento angular l", 0.1, 20.0, 4.0, 0.1)
+        E = st.slider("Energia total E", 0.01, 2.0, 0.5, 0.01)
         norbit = st.slider("Número de órbitas", 1, 5, 1, 1)
     else:
-        b = st.slider("Parâmetro de impacto b", 0.5, 20.0, 5.0, 0.1)
+        b = st.slider("Parâmetro de impacto b", 0.01, 20.0, 5.0, 0.1)
 
 if st.button("Simular"):
-    fig1, ax1 = plt.subplots(figsize=(6, 6))
-    fig2, ax2 = plt.subplots(figsize=(6, 6))
-
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+    
     if corpo == "Partícula Massiva":
-        r, V, x, y, r_max, r_min = orbita_massiva_nc(l, E, rst, norbit, theta)
+        r, V, x, y = orbita_massiva_nc(l, E, rst, norbit, theta)
         if r is not None:
-            ax1.plot(r, V, color='white')
-            ax1.scatter([r_max, r_min], [np.max(V), np.min(V)], color='yellow', zorder=5)
-            ax1.set_xlabel("r [km]")
-            ax1.set_ylabel("$U_{efetiva}^{RG}$")
-            ax1.set_title("Gráfico da Energia Potencial Efetiva")
-            ax1.grid(False)
-
-            ax2.plot(x, y, color='yellow')
-            ax2.add_patch(Circle((0, 0), 2, color='gray'))
-            ax2.set_title("Gráfico da Órbita")
-            ax2.set_xlabel("x [km]")
-            ax2.set_ylabel("y [km]")
+            ax1.plot(r, V, label=f'l={l}, E={E}, θ={theta}')
+            ax1.axhline(E, color='red', linestyle='--', label='Energia Total')
+            ax1.set_xlabel('r/M')
+            ax1.set_ylabel('V_eff')
+            ax1.legend()
+            ax2.plot(x, y)
+            ax2.add_patch(Circle((0,0), 2, color='black'))
+            ax2.set_title(f'Órbita ({norbit} volta(s))')
             ax2.axis('equal')
     else:
         r, V, x, y = orbita_foton_nc(b, rst, theta)
         if r is not None:
-            ax1.plot(r, V, color='white')
-            ax1.set_xlabel("r [km]")
-            ax1.set_ylabel("$U_{efetiva}^{RG}$")
-            ax1.set_title("Gráfico da Energia Potencial Efetiva")
-            ax1.grid(False)
-
-            ax2.plot(x, y, color='yellow')
-            ax2.add_patch(Circle((0, 0), 2, color='gray'))
-            ax2.set_title("Gráfico da Órbita")
-            ax2.set_xlabel("x [km]")
-            ax2.set_ylabel("y [km]")
+            ax1.plot(r, V, label=f'b={b}, θ={theta}')
+            ax1.set_xlabel('r/M')
+            ax1.set_ylabel('V_eff')
+            ax1.legend()
+            ax2.plot(x, y)
+            ax2.add_patch(Circle((0,0), 2, color='black'))
+            ax2.set_title('Trajetória do Fóton')
             ax2.axis('equal')
-
-    st.pyplot(fig1)
-    st.pyplot(fig2)
+    
+    st.pyplot(fig)
