@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import cumulative_trapezoid
 
-st.set_page_config(page_title="Simulador de Órbitas NC", layout="wide")
+st.set_page_config(page_title="Simulador de Órbitas NC (com Zoom)", layout="wide")
 
 # --- Dark Mode Toggle (continua na sidebar) ---
 modo_escuro = st.sidebar.toggle("🌗 Tema escuro", value=False, key="dark_mode")
@@ -27,7 +27,6 @@ if modo_escuro:
         }
     </style>
     """, unsafe_allow_html=True)
-
 else:
     st.markdown("""
     <style>
@@ -77,8 +76,8 @@ tab1, tab2 = st.tabs(["Simular", "Sobre"])
 
 # --- Conteúdo da Aba “Simular” ---
 with tab1:
-    st.markdown("# 🌌 Simulador de Órbitas em Espaço-Tempo Não Comutativo")
-    st.write("Este aplicativo explora como a não comutatividade quântica altera a estrutura de buracos negros e as trajetórias de partículas e fótons.")
+    st.markdown("# 🌌 Simulador de Potencial Efetivo NC (com Zoom nos Pontos Críticos)")
+    st.write("Aqui você verá o potencial efetivo não-comutativo em toda a extensão de \(r\), mas com zoom automático para evidenciar os mínimos e máximo locais.")
     st.write("---")
 
     # --- Parâmetros ---
@@ -87,18 +86,18 @@ with tab1:
         with col1:
             corpo = st.selectbox("Tipo de corpo", ["Partícula Massiva", "Fóton"])
             theta = st.slider("θ (não comutatividade)", 0.01, 2.0, 0.1, 0.01)
-            rst = st.slider("rst (r/M inicial)", 5, 50, 10, 1)
+            rst = st.slider("rst (r/M máximo para o gráfico)", 5, 100, 20, 1)
         with col2:
             if corpo == "Partícula Massiva":
                 l = st.slider("Momento Angular l", 0.1, 20.0, 4.0, 0.1)
-                E = st.slider("Energia E", 0.01, 2.0, 0.5, 0.01)
+                E = st.slider("Energia E (pode ser negativa)", -1.0, 2.0, 0.5, 0.01)
                 norbit = st.slider("Número de Órbitas", 1, 5, 1, 1)
                 b = None
             else:
                 b = st.slider("Parâmetro de Impacto b", 0.01, 20.0, 5.0, 0.1)
                 l = E = norbit = None
 
-    # --- Funções Matemáticas ---
+    # --- Funções Matemáticas (idem) ---
     def gerar_degrade(theta, size=500, scale=20):
         x = np.linspace(-size / 2, size / 2, size)
         y = np.linspace(-size / 2, size / 2, size)
@@ -120,7 +119,7 @@ with tab1:
         Veff = potencial_massiva_nc(1 / u_vals, l, theta)
         valid = E - Veff > 0
         if not np.any(valid):
-            st.error("Energia abaixo do potencial mínimo.")
+            st.error("Energia abaixo do potencial mínimo permitido.")
             return None, None, None, None
         u = u_vals[: np.where(valid)[0][-1] + 1]
         u = np.append(u[:-1], u[-1] * 0.999)
@@ -130,10 +129,10 @@ with tab1:
             initial=0,
         )
         r = 1 / u
-        Veff_final = potencial_massiva_nc(r, l, theta)
+        Vfinal = potencial_massiva_nc(r, l, theta)
         x = r * np.cos(theta_arr * norbit)
         y = r * np.sin(theta_arr * norbit)
-        return r, Veff_final, x, y
+        return r, Vfinal, x, y
 
     def potencial_foton_nc(r, theta):
         u = 1 / r
@@ -156,32 +155,96 @@ with tab1:
             initial=0,
         )
         r = 1 / u
-        Veff_final = potencial_foton_nc(r, theta)
+        Vfinal = potencial_foton_nc(r, theta)
         x = r * np.cos(theta_arr)
         y = r * np.sin(theta_arr)
-        return r, Veff_final, x, y
+        return r, Vfinal, x, y
 
-    # --- Simulação Gráfica ---
+    # --- Simulação Gráfica --- 
     if st.button("🚀 Simular"):
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+
+        # 1) Desenhar TODO o potencial NC até r = rst
+        r_plot = np.linspace(0.1, rst, 2000)       # evita r ≈ 0
         if corpo == "Partícula Massiva":
-            r, V, x, y = orbita_massiva_nc(l, E, rst, norbit, theta)
+            V_plot = potencial_massiva_nc(r_plot, l, theta)
+            ax1.plot(r_plot, V_plot, color="blue", label=f"V_eff^{{NC}}(massa), θ={theta}")
+            # Sobrepor a linha de energia (mesmo que E seja negativa)
+            ax1.axhline(E, color="red", ls="--", label=f"E = {E:.3f}")
         else:
-            r, V, x, y = orbita_foton_nc(b, rst, theta)
+            V_plot = potencial_foton_nc(r_plot, theta)
+            ax1.plot(r_plot, V_plot, color="brown", label=f"V_eff^{{NC}}(fóton), θ={theta}")
 
-        if r is not None:
-            ax1.plot(r, V, label=f"θ={theta}")
-            if corpo == "Partícula Massiva":
-                ax1.axhline(E, color="r", ls="--", label="E total")
-            ax1.set(xlabel="r/M", ylabel="V_eff")
-            ax1.legend()
+        ax1.set(xlabel="r/M", ylabel="V_eff(r)", title="Potencial Efetivo NC (com Zoom)")
+        ax1.legend()
 
+        # 2) Identificar e marcar pontos críticos (mínimos / máximo) em TODO o potencial
+        dV_dr_plot = np.gradient(V_plot, r_plot)
+        crit_indices = []
+        for i in range(len(dV_dr_plot) - 1):
+            if dV_dr_plot[i] == 0:
+                crit_indices.append(i)
+            elif dV_dr_plot[i] * dV_dr_plot[i + 1] < 0:
+                crit_indices.append(i)
+
+        r_crit = []
+        V_crit = []
+        tipo_crit = []
+        for idx in crit_indices:
+            r0, r1 = r_plot[idx], r_plot[idx + 1]
+            d0, d1 = dV_dr_plot[idx], dV_dr_plot[idx + 1]
+            if d1 != d0:
+                r_zero = r0 - d0 * (r1 - r0) / (d1 - d0)
+            else:
+                r_zero = r0
+            V_zero = np.interp(r_zero, r_plot, V_plot)
+            # segunda derivada aproximada para classificar:
+            d2V = (dV_dr_plot[idx + 1] - dV_dr_plot[idx]) / (r_plot[idx + 1] - r_plot[idx])
+            tp = "mínimo" if d2V > 0 else "máximo"
+
+            r_crit.append(r_zero)
+            V_crit.append(V_zero)
+            tipo_crit.append(tp)
+
+        # Marcar cada mínimo / máximo:
+        for (rc, Vc, tp) in zip(r_crit, V_crit, tipo_crit):
+            if tp == "mínimo":
+                ax1.scatter(rc, Vc, color="green", s=50, marker="o",
+                            label="Mínimo" if "Mínimo" not in ax1.get_legend_handles_labels()[1] else "")
+            else:
+                ax1.scatter(rc, Vc, color="orange", s=50, marker="X",
+                            label="Máximo" if "Máximo" not in ax1.get_legend_handles_labels()[1] else "")
+        ax1.legend()
+
+        # ===== NOVO PASSO: Definir os limites em y (zoom) =====
+        if len(V_crit) >= 1:
+            v_min = min(V_crit)
+            v_max = max(V_crit + [E] if corpo=="Partícula Massiva" else V_crit)
+            # margens de 10% na vertical
+            margem = 0.1 * (v_max - v_min) if (v_max - v_min) != 0 else 0.1
+            ax1.set_ylim(v_min - margem, v_max + margem)
+        # Se algum V_crit for negativo e E também estiver negativo, a reta E entra no cálculo de v_max
+        # e garantimos que ela fique visível no gráfico.
+
+        # 3) Exibir numericamente a lista de pontos críticos abaixo do gráfico
+        info_str = "Pontos críticos encontrados:\n"
+        for (rc, Vc, tp) in zip(r_crit, V_crit, tipo_crit):
+            info_str += f" - r = {rc:.3f}, V = {Vc:.3f}  ({tp})\n"
+        st.text(info_str)
+
+        # 4) Plotar a trajetória (se aplicável) no outro eixo
+        if corpo == "Partícula Massiva":
+            r_orb, V_orb, x_orb, y_orb = orbita_massiva_nc(l, E, rst, norbit, theta)
+        else:
+            r_orb, V_orb, x_orb, y_orb = orbita_foton_nc(b, rst, theta)
+
+        if r_orb is not None:
             grade = gerar_degrade(theta)
-            X, Y = x * 20, y * 20
+            X, Y = x_orb * 20, y_orb * 20
             mx = max(max(abs(X)), max(abs(Y)), (2 + theta) * 20)
             ax2.imshow(grade, cmap="gray", extent=[-mx, mx, -mx, mx], origin="lower", alpha=1)
             cor_traj = "g" if corpo == "Partícula Massiva" else "orange"
-            titulo = "Órbita" if corpo == "Partícula Massiva" else "Fóton"
+            titulo = "Órbita da Partícula" if corpo == "Partícula Massiva" else "Órbita do Fóton"
             ax2.plot(X, Y, color=cor_traj, label="Trajetória")
             ax2.set(xlabel="x (escalado)", ylabel="y (escalado)", title=titulo)
             ax2.axis("equal")
@@ -190,7 +253,7 @@ with tab1:
         st.pyplot(fig)
 
 
-# --- Conteúdo da Aba “Sobre” ---
+# --- Conteúdo da Aba “Sobre” (permanece igual) ---
 with tab2:
     st.markdown("## 🧠 Resumo Integrado ao Simulador")
     st.markdown("---")
@@ -219,15 +282,6 @@ with tab2:
         Nessa abordagem, a massa do buraco negro é **espalhada por uma região finita**, suavizando
         as divergências e **eliminando a singularidade central**. Essa modificação afeta diretamente
         a métrica, o potencial efetivo e as órbitas de partículas e fótons.
-        """
-    )
-    st.markdown(
-        r"""
-        Este simulador implementa essas ideias ao calcular órbitas em um espaço-tempo não comutativo.
-        A métrica modificada substitui o termo clássico $2M/r$ por uma função suave que depende do
-        parâmetro de não comutatividade $\theta$. Com isso, o **potencial efetivo se torna regular**
-        em todo o domínio e permite analisar como partículas e fótons se comportam perto do centro sem
-        encontrar divergências.
         """
     )
 
@@ -276,9 +330,9 @@ with tab2:
         r"""
         V_{\text{fóton}}^{NC}(r)
         = 
-        \Biggl[\,1 
-        - \frac{4}{\pi}\Bigl(\arctan\!\bigl(\tfrac{r}{\sqrt{\theta}}\bigr) 
-        - \frac{r\,\sqrt{\theta}}{r^2 + \theta}\Bigr)\Biggr]\frac{1}{r^2} 
+        \Bigl[\,1 
+        - \frac{4}{\pi}\bigl(\arctan\!\bigl(\tfrac{r}{\sqrt{\theta}}\bigr) 
+        - \frac{r\,\sqrt{\theta}}{r^2 + \theta}\bigr)\Bigr]\frac{1}{r^2} 
         \;-\; \frac{2}{r^3}
         """
     )
@@ -319,9 +373,11 @@ with tab2:
     st.markdown(
         r"""
         - A **singularidade** clássica em $r = 0$ é eliminada pela suavização introduzida por $\theta$.  
-        - O **potencial efetivo** torna-se regular em todo o domínio, permitindo resolver trajetórias
-          numéricas sem erros de divisão por zero.  
-        - Em certos valores de $\theta$, podem surgir **remanescestes ultra-densos sem horizonte de eventos**, 
+        - O **potencial efetivo** no caso NC torna-se regular em todo o domínio, mas, como há picos enormes
+          para \(r \to 0\), precisamos dar zoom para ver os mínimo e máximo locais com clareza.  
+        - Com o ajuste automático de escala mostrado aqui, você verá dois mínimos e um máximo destacados,
+          sem que o gráfico seja “dominado” pelo pico em \(r \approx 0\).  
+        - Em certos valores de \(\theta\), podem surgir **remanescestes ultra-densos sem horizonte de eventos**, 
           indicando um limite mínimo de massa abaixo do qual não se forma buraco negro.
         """
     )
