@@ -115,8 +115,6 @@ else:
     """, unsafe_allow_html=True)
 
 
-
-
 st.markdown("""
 <style>
 /* Altera o botão na barra lateral para vermelho */
@@ -161,7 +159,7 @@ st.markdown("""
 /* Seleciona o CONTÊINER do botão usando data-testid */
 [data-testid="stSidebarCollapsedControl"] {
     position: fixed !important;
-    top: 50% !important;
+    top: 80% !important;
     left: 0 !important;
     transform: translateY(-50%) !important;
     z-index: 9999 !important;
@@ -629,3 +627,6 @@ with tab2:
         - Em certos valores de $\Theta$, surgem **remanescestes ultra-densos sem horizonte de eventos**, indicando um limite mínimo de massa abaixo do qual não se forma buraco negro.
         """
     )
+
+    # Fim do documento
+    #
