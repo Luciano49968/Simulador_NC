@@ -14,68 +14,176 @@ st.set_page_config(page_title="Simulador de Órbitas NC", layout="wide")
 # --- Dark Mode Toggle (continua na sidebar) ---
 modo_escuro = st.sidebar.toggle("🌗 Tema escuro", value=False, key="dark_mode")
 
+
+
 # --- CSS modo claro / escuro ---
+
+
 if modo_escuro:
     st.markdown("""
     <style>
-        /* Fundo e texto para modo escuro */
-        html, body, [class*="css"] {
-            background-color: #111 !important;
-            color: #fff !important;
-        }
-        .stApp, .block-container, main, section[data-testid="stSidebar"] {
-            background-color: #111 !important;
-        }
-        h1, h2, h3, h4, h5, h6, 
-        .stMarkdown, .streamlit-expanderHeader,
-        section[data-testid="stSidebar"] * {
-            color: #fff !important;
-        }
+    html, body, [class*="css"] {
+        background-color: #111 !important;
+        color: #fff !important;
+    }
+    .stApp, .block-container, main, section[data-testid="stSidebar"] {
+        background-color: #111 !important;
+    }
+    h1, h2, h3, h4, h5, h6, 
+    .stMarkdown, .streamlit-expanderHeader,
+    section[data-testid="stSidebar"] * {
+        color: #fff !important;
+    }
+
+    /* Selectbox DARK */
+    [data-baseweb="select"] {
+        background-color: #222 !important;
+        color: #fff !important;
+        border: 1px solid #555 !important;
+        border-radius: 5px !important;
+    }
+    [data-baseweb="select"] div[role="button"] {
+        background-color: #222 !important;
+        color: #fff !important;
+        border: none !important;
+    }
+    [data-baseweb="menu"] {
+        background-color: #222 !important;
+        color: white !important;
+    }
+    [data-baseweb="option"] {
+        background-color: #222 !important;
+        color: white !important;
+    }
+    [data-baseweb="option"]:hover {
+        background-color: #444 !important;
+        color: white !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 else:
     st.markdown("""
     <style>
-        /* 1) Fundo branco e texto preto em TODO o documento (body, containers e classes genéricas) */
-        html, body, [class*="css"], .stApp, .block-container, main, section[data-testid="stSidebar"] {
-            background-color: #fff !important;
-            color: #000 !important;
-        }
-        /* 2) Força todos os elementos dentro do main a ficarem pretos */
-        main * {
-            color: #000 !important;
-        }
-        /* 3) Força todos os elementos dentro do sidebar a ficarem pretos */
-        section[data-testid="stSidebar"] * {
-            color: #001 !important;
-        }
-        /* 4) Títulos e cabeçalhos de Markdown/expander */
-        h1, h2, h3, h4, h5, h6, .stMarkdown, .streamlit-expanderHeader {
-            color: #001 !important;
-        }
-        /* 5) Força widgets e labels a ficarem pretos */
-        button,
-        .stButton > button, 
-        .stSlider, 
-        .stSelectbox, 
-        .stTextInput, 
-        .stNumberInput, 
-        .stRadio, 
-        .stCheckbox, 
-        .stMultiselect, 
-        .stDateInput, 
-        .stTimeInput, 
-        label {
-            color: #000 !important;
-        }
-        /* 6) Exemplos de classes internas que costumam vir em cinza-claro */
-        .css-14xtw13,
-        .css-1adrfps,
-        .css-1b0wozx {
-            color: #000 !important;
-        }
+    html, body, [class*="css"], .stApp, .block-container, main, section[data-testid="stSidebar"] {
+        background-color: #fff !important;
+        color: #000 !important;
+    }
+    main *, section[data-testid="stSidebar"] * {
+        color: #000 !important;
+    }
+    h1, h2, h3, h4, h5, h6, .stMarkdown, .streamlit-expanderHeader {
+        color: #000 !important;
+    }
+    button,
+    .stButton > button, 
+    .stSlider, 
+    .stSelectbox, 
+    .stTextInput, 
+    .stNumberInput, 
+    .stRadio, 
+    .stCheckbox, 
+    .stMultiselect, 
+    .stDateInput, 
+    .stTimeInput, 
+    label {
+        color: #000 !important;
+    }
+
+    /* SELECTBOX - modo claro */
+    [data-baseweb="select"] * {
+        color: black !important;
+        background-color: white !important;
+        border-color: #ccc !important;
+    }
+    [data-baseweb="select"] div[role="button"] {
+        color: black !important;
+        background-color: white !important;
+    }
+    [data-baseweb="menu"] {
+        background-color: white !important;
+        color: black !important;
+    }
+    [data-baseweb="option"] {
+        background-color: white !important;
+        color: black !important;
+    }
+    [data-baseweb="option"]:hover {
+        background-color: #eee !important;
+        color: black !important;
+    }
     </style>
     """, unsafe_allow_html=True)
+
+
+
+
+st.markdown("""
+<style>
+/* Altera o botão na barra lateral para vermelho */
+section[data-testid="stSidebar"] button {
+    background-color: #d32f2f !important;  /* vermelho */
+    color: white !important;               /* texto branco */
+    border: none !important;
+    border-radius: 5px !important;
+    padding: 0.5em 1em !important;
+    font-weight: bold !important;
+    transition: background-color 0.3s ease;
+}
+
+/* Efeito hover (passar o mouse) */
+section[data-testid="stSidebar"] button:hover {
+    background-color: #b71c1c !important;  /* vermelho mais escuro */
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+st.markdown("""
+<style>
+/* Seta do botão da sidebar (sempre branca) */
+button[title="Expand sidebar"] svg,
+button[title="Collapse sidebar"] svg {
+    stroke: white !important;
+}
+
+/* Fundo escuro do botão para garantir contraste com a seta branca */
+button[title="Expand sidebar"],
+button[title="Collapse sidebar"] {
+    background-color: #000000 !important;  /* fundo preto */
+    border: none !important;
+    border-radius: 5px !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<style>
+/* Seleciona o CONTÊINER do botão usando data-testid */
+[data-testid="stSidebarCollapsedControl"] {
+    position: fixed !important;
+    top: 50% !important;
+    left: 0 !important;
+    transform: translateY(-50%) !important;
+    z-index: 9999 !important;
+}
+
+/* Estiliza o BOTÃO em si dentro do container */
+[data-testid="stSidebarCollapsedControl"] button {
+    background-color: #000 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 8px !important;
+    box-shadow: 0 0 6px rgba(255,255,255,0.3);
+}
+
+/* Faz a seta branca */
+[data-testid="stSidebarCollapsedControl"] svg {
+    stroke: white !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 
 
 # Cabeçalho na sidebar para os controles
@@ -265,7 +373,7 @@ with tab1:
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
 
       # Define o centro da faixa e uma largura pequena
-        r0 = 0.5  # centro de (1.5 + 3.0) / 2
+        r0 = 0.2  # centro de (1.5 + 3.0) / 2
         largura = 0.75
 
         # Faixa mais fina
