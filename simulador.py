@@ -193,16 +193,22 @@ st.markdown("""
 
 st.markdown("""
 <style>
-/* Aumenta a fonte das abas */
-[role="tablist"] > [role="tab"] {
-    font-size: 1.6rem !important;  /* aumente para 1.4rem, 1.6rem se quiser mais */
-    font-weight: bold !important;
-    padding: 0.75rem 1.2rem !important;
-}
+  [data-baseweb="tab-list"] button[data-baseweb="tab"] {
+      font-size: 1.8rem !important;
+      font-weight: bold !important;
+      padding: 0.75rem 1.2rem !important;
+  }
 </style>
 """, unsafe_allow_html=True)
 
-
+st.markdown("""
+<style>
+  /* Seleciona QUALQUER texto dentro do botão de aba */
+  button[data-testid="stHorizontalTab"] * {
+    font-weight: bold !important;
+  }
+</style>
+""", unsafe_allow_html=True)
 
 # Cabeçalho na sidebar para os controles
 st.sidebar.markdown("## 🎛️ Parâmetros de Simulação")
