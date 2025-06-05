@@ -409,7 +409,7 @@ with tab1:
         if corpo == "Partícula Massiva" and V_plot.size > 0:
             ax1.axhline(E, color="red", ls="--", label=f"E = {E:.2f}")
 
-        ax1.set(xlabel="r / M", ylabel="V_eff(r)", title="Potencial Efetivo NC (com Zoom)")
+        ax1.set(xlabel="r / M", ylabel="V_eff(r)", title="Potencial Efetivo NC")
 
         # Detecta máximos e mínimos locais
         maxima_ids, _ = find_peaks(V_plot, distance=10)
