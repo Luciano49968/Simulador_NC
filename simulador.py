@@ -14,7 +14,7 @@ st.set_page_config(page_title="Simulador de Órbitas NC", layout="wide")
 # --- Dark Mode Toggle (continua na sidebar) ---
 modo_escuro = st.sidebar.toggle("🌗 Tema escuro", value=False, key="dark_mode")
 
-# --- Aplicar CSS conforme modo claro / escuro ---
+# --- CSS modo claro / escuro ---
 if modo_escuro:
     st.markdown("""
     <style>
@@ -102,7 +102,7 @@ else:
 simular = st.sidebar.button("🚀 Simular")
 
 # =============================================================================
-#                          FUNÇÕES NUMÉRICAS (sem alteração)
+#                          FUNÇÕES NUMÉRICAS
 # =============================================================================
 
 def potencial_massiva_nc(r: np.ndarray, l: float, theta: float) -> np.ndarray:
@@ -225,10 +225,10 @@ def gerar_degrade(theta: float, size: int = 500, scale: float = 20) -> np.ndarra
 
 
 # =============================================================================
-#                          ABA “Simular” (conteúdo principal)
+#                          ABA “Simular” (componente principal)
 # =============================================================================
 
-# Criando as abas mantém somente um st.tabs() no topo
+# Abas st.tabs() no topo
 tab1, tab2 = st.tabs(["Simular", "Sobre"])
 
 with tab1:
@@ -264,9 +264,12 @@ with tab1:
         # 2) Cria UMA só Figura com 2 eixos: ax1 (potencial) e ax2 (órbita)
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
 
-        # --- 2.1) AX1: sombreia a região interna ao horizonte [0, r_plus] ---
-        ax1.axvspan(0, r_plus, color="blue", alpha=0.2, label="Interior do horizonte")
-        # (A linha vertical tracejada em r = r_plus foi removida, conforme solicitado)
+      # Define o centro da faixa e uma largura pequena
+        r0 = 0.5  # centro de (1.5 + 3.0) / 2
+        largura = 0.75
+
+        # Faixa mais fina
+        ax1.axvspan(r0 - largura / 2, r0 + largura / 2, color="cornflowerblue", alpha=0.3, label="Maior concentração de massa")
 
         # --- Plota o potencial e a reta de energia ---
         cor = "blue" if corpo == "Partícula Massiva" else "brown"
@@ -342,7 +345,7 @@ with tab1:
         else:
             st.write("Nenhum ponto crítico detectado no intervalo exibido.")
 
-        # --- 2.2) AX2: desenha o gráfico de órbita (sem alterar a lógica original) ---
+        # --- 2.2) AX2: desenha o gráfico de órbita ---
         if corpo == "Partícula Massiva":
             r_orb, V_orb, x_orb, y_orb = orbita_massiva_nc(l, E, rst, norbit, theta)
         else:
