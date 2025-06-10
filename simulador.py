@@ -1,11 +1,12 @@
 import streamlit as st
 import numpy as np
+from main import *
 import matplotlib.pyplot as plt
-from scipy.integrate import cumulative_trapezoid
-from scipy.signal import find_peaks
 
-# Configurações da página
+
 st.set_page_config(page_title="Simulador de Órbitas NC", layout="wide")
+
+
 
 # =============================================================================
 #                             SIDEBAR (controles + tema escuro)
@@ -217,144 +218,47 @@ st.sidebar.markdown("## 🎛️ Parâmetros de Simulação")
 corpo = st.sidebar.selectbox("Tipo de corpo", ["Partícula Massiva", "Fóton"])
 
 # Slider de θ (não-comutatividade) e rst (r/M máximo)
-theta = st.sidebar.slider("Θ (não comutatividade)", 0.01, 1.0, 0.02, 0.01, format="%.2f")
-rst = st.sidebar.slider("rst (r/M máximo)", 5, 100, 20, 1)
+#theta = st.sidebar.slider("Θ (não comutatividade)", 0.001, 0.05, 0.01, 0.001, format="%.2f")
+theta = 0.05
+#rst = st.sidebar.slider("rst (r/M máximo)", 5, 100, 20, 1)
+
 
 # Parâmetros específicos para cada tipo de corpo
 if corpo == "Partícula Massiva":
-    l = st.sidebar.slider("Momento Angular l", 0.1, 10.0, 1.0, 0.1, format="%.1f")
-    E = st.sidebar.slider("Energia E", 0.01, 2.0, 0.5, 0.01, format="%.2f")
-    norbit = st.sidebar.slider("Escala do ângulo total", 1, 5, 1, 1)
+    l = st.sidebar.slider("Momento Angular l", 0.1, 5.0, 1.0, 0.01, format="%.1f")
+    E = st.sidebar.slider("Energia E", 0.01, 1.0, 0.1, 0.01, format="%.2f")
+    #norbit = st.sidebar.slider("Escala do ângulo total", 1, 5, 1, 1)
+    norbit = 50
+    # Se não for partícula massiva, não usa l nem E
     b = None
 else:
     b = st.sidebar.slider("Parâmetro de Impacto b", 0.01, 10.0, 5.0, 0.1, format="%.1f")
     l = E = norbit = None
 
+if l < 0.6:
+    s = 1.5
+elif 0.6 <= l < 2.9:
+    s = 12
+elif 2.9 <= l < 3.9:
+    s = 20
+elif 3.9 <= l <= 4.9:
+    s = 150
+elif 5.0 <= l < 5.9:
+    s = 200
+elif 5.9 <= l < 6.9:
+    s = 300
+elif 6.9 <= l < 7.9:
+    s = 450
+elif 7.9 <= l < 8.9:
+    s = 550
+elif 8.9 <= l < 9.9:
+    s = 650
+elif l == 10:
+    s = 750
+
+rst = s / l 
 # Botão “Simular” na sidebar
 simular = st.sidebar.button("🚀 Simular")
-
-# =============================================================================
-#                          FUNÇÕES NUMÉRICAS
-# =============================================================================
-
-def potencial_massiva_nc(r: np.ndarray, l: float, theta: float) -> np.ndarray:
-    """
-    Potencial efetivo não-comutativo para partícula massiva:
-      V_eff^{NC}(r) = - 1/r
-                      + (l^2)/(2 r^2)
-                      - (l^2)/(r^3)
-                      + (8 √θ/π) ⋅ (l^2)/(r^4)
-    """
-    u = 1.0 / r
-    return -u + 0.5 * (l**2) * u**2 - (l**2) * u**3 + (8.0 * np.sqrt(theta) / np.pi) * (l**2) * u**4
-
-
-def orbita_massiva_nc(l: float, E: float, rst: float, norbit: int, theta: float):
-    """
-    Rotina de órbita para partícula massiva:
-      - u = 1/r variando de 1/rst até 0.5
-      - verifica E - V_eff > 0 para cada u
-      - integra dφ/du = (l/√2) / √(E - V_eff(1/u))
-    """
-    u_min = 1.0 / rst
-    u_vals = np.linspace(u_min, 0.5, 2000)
-    Veff = potencial_massiva_nc(1.0 / u_vals, l, theta)
-    valid = (E - Veff) > 0.0
-    if not np.any(valid):
-        st.error("⚠️ Energia abaixo do potencial mínimo permitido. Ajuste E ou l.")
-        return None, None, None, None
-
-    last_idx = np.where(valid)[0][-1]
-    u = u_vals[: last_idx + 1]
-
-    if len(u) > 1:
-        u = np.append(u[:-1], u[-1] * 0.999)
-    elif len(u) == 1:
-        u = np.array([u[0] * 0.999])
-    else:
-        st.error("⚠️ Nenhum ponto válido para a órbita com os parâmetros fornecidos.")
-        return None, None, None, None
-
-    integrand = (l / np.sqrt(2.0)) / np.sqrt(
-        np.maximum(1e-12, E - potencial_massiva_nc(1.0 / u, l, theta))
-    )
-    integrand[np.isnan(integrand)] = 0.0
-    integrand[np.isinf(integrand)] = 0.0
-
-    theta_arr = cumulative_trapezoid(integrand, u, initial=0.0)
-    r = 1.0 / u
-    Vfinal = potencial_massiva_nc(r, l, theta)
-    x = r * np.cos(theta_arr * norbit)
-    y = r * np.sin(theta_arr * norbit)
-    return r, Vfinal, x, y
-
-
-def potencial_foton_nc(r: np.ndarray, theta: float) -> np.ndarray:
-    """
-    Potencial efetivo não-comutativo para fóton:
-      V_eff^{NC}(r) = [1 - (4/π)*(arctan(r/√θ) - (r√θ)/(r² + θ))]⋅1/r² - 2/r³
-    """
-    u = 1.0 / r
-    term = 1.0 - (4.0 / np.pi) * (
-        np.arctan(r / np.sqrt(theta)) - (r * np.sqrt(theta)) / (r**2 + theta)
-    )
-    return term * u**2 - 2.0 * u**3
-
-
-def orbita_foton_nc(b: float, rst: float, theta: float):
-    """
-    Rotina de órbita para fóton:
-      - u = 1/r variando de 1/rst até 0.5
-      - verifica 1/b² - V_eff > 0
-      - integra dφ/du = 1/√(1/b² - V_eff(1/u))
-    """
-    u_min = 1.0 / rst
-    u_vals = np.linspace(u_min, 0.5, 2000)
-    Veff = potencial_foton_nc(1.0 / u_vals, theta)
-    valid = (1.0 / b**2 - Veff) > 0.0
-    if not np.any(valid):
-        st.error("⚠️ Parâmetro de impacto b fora do alcance seguro. Ajuste b.")
-        return None, None, None, None
-
-    last_idx = np.where(valid)[0][-1]
-    u = u_vals[: last_idx + 1]
-
-    if len(u) > 1:
-        u = np.append(u[:-1], u[-1] * 0.999)
-    elif len(u) == 1:
-        u = np.array([u[0] * 0.999])
-    else:
-        st.error("⚠️ Nenhum ponto válido para a órbita com os parâmetros fornecidos.")
-        return None, None, None, None
-
-    integrand = 1.0 / np.sqrt(
-        np.maximum(1e-12, 1.0 / b**2 - potencial_foton_nc(1.0 / u, theta))
-    )
-    integrand[np.isnan(integrand)] = 0.0
-    integrand[np.isinf(integrand)] = 0.0
-
-    theta_arr = cumulative_trapezoid(integrand, u, initial=0.0)
-    r = 1.0 / u
-    Vfinal = potencial_foton_nc(r, theta)
-    x = r * np.cos(theta_arr)
-    y = r * np.sin(theta_arr)
-    return r, Vfinal, x, y
-
-
-def gerar_degrade(theta: float, size: int = 500, scale: float = 20) -> np.ndarray:
-    """
-    Gera um mapa de calor 2D para densidade de massa NC (mantido idêntico ao original).
-    """
-    x = np.linspace(-size / 2.0, size / 2.0, size)
-    y = np.linspace(-size / 2.0, size / 2.0, size)
-    X, Y = np.meshgrid(x, y)
-    R = np.sqrt(X**2 + Y**2) / scale
-    rho = 1.0 / (np.pi**2 * np.sqrt(theta) * (R**2 + theta)**2)
-    if theta < 0.05:
-        rho = rho**0.4
-    norm = rho / np.max(rho)
-    return np.clip(norm, 0.0, 1.0)
-
 
 # =============================================================================
 #                          ABA “Simular” (componente principal)
@@ -373,7 +277,7 @@ with tab1:
         r_plus = 2.0  # Exemplo: em Schwarzschild clássico, r+ = 2M. Altere para o valor NC correto.
 
         # 1) Prepara vetor r_plot e calcula V_plot conforme o "corpo"
-        r_plot = np.linspace(0.0001, rst, 50000)
+        r_plot = np.linspace(0.001, rst, 50000)
         if corpo == "Partícula Massiva":
             V_plot = potencial_massiva_nc(r_plot, l, theta)
         else:
@@ -397,28 +301,26 @@ with tab1:
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
 
       # Define o centro da faixa e uma largura pequena
-        r0 = 0.2  # centro de (1.5 + 3.0) / 2
-        largura = 0.75
-
-        # Faixa mais fina
-        ax1.axvspan(r0 - largura / 2, r0 + largura / 2, color="cornflowerblue", alpha=0.3, label="Maior concentração de massa")
-
+        
+        
+        
         # --- Plota o potencial e a reta de energia ---
         cor = "blue" if corpo == "Partícula Massiva" else "brown"
         ax1.plot(r_plot, V_plot, color=cor, label=f"V_eff^NC({corpo[:3]}), θ={theta:.2f}")
         if corpo == "Partícula Massiva" and V_plot.size > 0:
             ax1.axhline(E, color="red", ls="--", label=f"E = {E:.2f}")
 
-        ax1.set(xlabel="r / M", ylabel="V_eff(r)", title="Potencial Efetivo NC")
+        ax1.set(xlabel="r", ylabel="V_eff(r)", title="Potencial Efetivo NC")
 
         # Detecta máximos e mínimos locais
         maxima_ids, _ = find_peaks(V_plot, distance=10)
         minima_ids, _ = find_peaks(-V_plot, distance=10)
-
+        
+        # Plota os máximos e mínimos detectados
         r_crit = []
         V_crit = []
         tipo_crit = []
-
+        
         for idx in maxima_ids:
             r_crit.append(r_plot[idx])
             V_crit.append(V_plot[idx])
@@ -435,6 +337,24 @@ with tab1:
             r_crit, V_crit, tipo_crit = ([], [], [])
 
         added = set()
+        r0 = r_crit[0]
+        if l < 2.0:
+            largura = 0.5
+            
+        elif 2.0 <= l < 3.0:
+            largura = 0.2
+            r0= r0 - 0.2
+        elif 3.0 <= l < 4.0:
+            largura = 0.5
+            
+        elif 4.0 <= l <= 5.0:
+            largura = 0.5
+            
+
+
+        # Faixa mais fina
+        ax1.axvspan(r0 - largura / 2, r0 + largura / 2, color="cornflowerblue", alpha=0.3, label="Maior concentração de massa")
+
         for rc, Vc, tp in zip(r_crit, V_crit, tipo_crit):
             if tp == "mínimo":
                 if "mínimo" not in added:
@@ -484,14 +404,15 @@ with tab1:
             r_orb, V_orb, x_orb, y_orb = orbita_foton_nc(b, rst, theta)
 
         if (r_orb is not None) and (x_orb.size > 0):
-            grade = gerar_degrade(theta, size=500, scale=20)
+            grade = gerar_degrade(theta, size=500, scale=30)
+            circulo_maior = gerar_circulo_maior_array(size=500, scale=30,fator_raio=1.5)
             X = x_orb * 20.0
             Y = y_orb * 20.0
             if X.size > 0 and Y.size > 0:
                 mx = max(np.max(np.abs(X)), np.max(np.abs(Y)), (2.0 + theta) * 20.0)
             else:
                 mx = (2.0 + theta) * 20.0
-
+            
             ax2.imshow(
                 grade,
                 cmap="gray",
@@ -499,10 +420,16 @@ with tab1:
                 origin="lower",
                 alpha=1.0,
             )
-            cor_traj = "green" if corpo == "Partícula Massiva" else "orange"
+            ax2.imshow(
+                circulo_maior,
+                extent=[-mx, mx, -mx, mx],
+                origin="lower",
+                alpha=0.0,
+            )
+            cor_traj = "red" if corpo == "Partícula Massiva" else "orange"
             titulo = "Órbita da Partícula" if corpo == "Partícula Massiva" else "Órbita do Fóton"
             ax2.plot(X, Y, color=cor_traj, label="Trajetória")
-            ax2.set(xlabel="x (Km)", ylabel="y (Km)", title=titulo)
+            ax2.set(xlabel="x (escala)", ylabel="y (escala)", title=titulo)
             ax2.axis("equal")
             ax2.legend()
         else:
@@ -653,6 +580,3 @@ with tab2:
         - Em certos valores de $\Theta$, surgem **remanescestes ultra-densos sem horizonte de eventos**, indicando um limite mínimo de massa abaixo do qual não se forma buraco negro.
         """
     )
-
-    # Fim do documento
-    #
