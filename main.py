@@ -6,7 +6,6 @@ from scipy.integrate import quad
 import math
 from scipy.special import ellipkinc
 from matplotlib.patches import Circle
-import plotly.graph_objects as go
 from scipy.integrate import solve_ivp
 
 
