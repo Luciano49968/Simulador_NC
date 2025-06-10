@@ -415,7 +415,7 @@ with tab1:
             
             ax2.imshow(
                 grade,
-                cmap="gray",
+                cmap="grey_r",
                 extent=[-mx, mx, -mx, mx],
                 origin="lower",
                 alpha=1.0,
