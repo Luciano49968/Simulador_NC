@@ -25,9 +25,9 @@ def potencial_massiva_nc(r: np.ndarray, l: float, theta: float) -> np.ndarray:
 def orbita_massiva_nc(
     l: float,
     E: float,
-    rst: float = 50,
-    norbit: float = 10,
-    theta: float = 0.1,
+    rst: float = 20,
+    norbit: float = 50,
+    theta: float = 0.05,
     n_points: int = 5000,
     
 ):
@@ -71,9 +71,14 @@ def orbita_massiva_nc(
         Veff_grad = np.gradient(Veff, u)
         turning_point_detected = np.any((Veff_grad > 0) & (discr > 0))
         # espiral 
-        phi = phi_raw * 4.5  # fixo e mais confiável
-        r = r_vals
-            
+        if idx_last < len(u_vals) - 1:
+            phi_out = phi_raw[-1] + (phi_raw[-1] - phi_raw[::-1])
+            r_out = r_vals[::-1]
+            phi = np.concatenate([phi_raw, phi_out])
+            r = np.concatenate([r_vals, r_out])
+        else:
+            phi = phi_raw * 4.5
+            r = r_vals
 
         # Coordenadas cartesianas
         x = r * np.cos(phi)
