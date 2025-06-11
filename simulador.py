@@ -225,38 +225,90 @@ theta = 0.05
 
 # Parâmetros específicos para cada tipo de corpo
 if corpo == "Partícula Massiva":
-    l = st.sidebar.slider("Momento Angular l", 0.1, 5.0, 1.0, 0.01, format="%.1f")
+    l = st.sidebar.slider("Momento Angular l", 0.1, 10.0, 1.0, 0.01, format="%.1f")
     E = st.sidebar.slider("Energia E", 0.01, 1.0, 0.1, 0.01, format="%.2f")
     #norbit = st.sidebar.slider("Escala do ângulo total", 1, 5, 1, 1)
     norbit = 50
+    parada = True
+    if  l < 0.6:
+        s = 5
+        rst = s / l
+    elif 0.6 <= l < 2.9:
+        s = 12
+        rst = s / l
+    elif 2.9 <= l < 3.9:
+        s = 70
+        rst = s / l
+    elif 3.9 <= l <= 4.8:
+        s = 100
+        rst = s / l
+    elif 4.8 < l < 5.9:
+        s = 200
+        rst = s / l
+    elif 5.9 <= l < 6.9:
+        s = 300
+        rst = s / l
+    elif 6.9 <= l < 7.9:
+        s = 450
+        rst = s / l
+    elif 7.9 <= l < 8.4:
+        s = 550
+        rst = s / l
+    elif 8.4 <= l < 8.9:
+        s = 850
+        rst = s / l
+    elif 8.9 <= l < 9.9:
+        s = 850
+        rst = s / l
+    elif l == 10:
+        s = 1000
+        rst = s / l
     # Se não for partícula massiva, não usa l nem E
     b = None
 else:
     b = st.sidebar.slider("Parâmetro de Impacto b", 0.01, 10.0, 5.0, 0.1, format="%.1f")
     l = E = norbit = None
+    if  b < 0.6:
+        
+        rst = 50
+    elif 0.6 <= b < 2.9:
+        
+        rst = 50
+    elif 2.9 <= b < 3.9:
+        
+        rst = 50
+    elif 3.9 <= b <= 4.8:
+        
+        rst = 50
+    elif 4.8 < b < 5.9:
+        
+        rst = 50
+    elif 5.9 <= b < 6.9:
 
-if l < 0.6:
-    s = 1.5
-elif 0.6 <= l < 2.9:
-    s = 12
-elif 2.9 <= l < 3.9:
-    s = 20
-elif 3.9 <= l <= 4.9:
-    s = 150
-elif 5.0 <= l < 5.9:
-    s = 200
-elif 5.9 <= l < 6.9:
-    s = 300
-elif 6.9 <= l < 7.9:
-    s = 450
-elif 7.9 <= l < 8.9:
-    s = 550
-elif 8.9 <= l < 9.9:
-    s = 650
-elif l == 10:
-    s = 750
+        rst = 50
+    elif 6.9 <= b < 7.9:
 
-rst = s / l 
+        rst = 50
+    elif 7.9 <= b < 8.4:
+
+        rst = 50
+    elif 8.4 <= b < 8.9:
+
+        rst = 50
+    elif 8.9 <= b < 9.9:
+
+        rst = 50
+    elif b == 10:
+
+        rst = 50
+# massivo
+
+
+#foton
+
+
+
+
 # Botão “Simular” na sidebar
 simular = st.sidebar.button("🚀 Simular")
 
@@ -281,6 +333,7 @@ with tab1:
         if corpo == "Partícula Massiva":
             V_plot = potencial_massiva_nc(r_plot, l, theta)
         else:
+            r_plot = np.linspace(10.1, rst, 1000)
             V_plot = potencial_foton_nc(r_plot, theta)
 
         # Trunca caso apareçam NaN ou inf em V_plot
@@ -300,9 +353,31 @@ with tab1:
         # 2) Cria UMA só Figura com 2 eixos: ax1 (potencial) e ax2 (órbita)
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
 
+        # 1) No gráfico do potencial (ax1), desenhe uma linha vertical em r = r_plus:
+        ax1.axvline(r_plus, color="black", linestyle="--", label="Horizonte de Eventos")
+
+        # 2) No gráfico da órbita (ax2), desenhe um círculo centrado em (0,0) com raio r_plus*escala:
+#    Lembre-se de usar a mesma escala que você aplica em X, Y.
+        raio_visual = r_plus * 40  # se você escala x_orb, y_orb por 20
+        horizonte = Circle(
+            (0, 0), 
+            raio_visual, 
+            edgecolor="green", 
+            facecolor="none",
+            linestyle='--',  # tracejado
+            linewidth=2.0,
+            alpha=1.0,
+            label="Horizonte de Eventos"
+        )
+        ax2.add_patch(horizonte)
+
+        # 3) Atualize legendas:
+        ax1.legend()
+        ax2.legend()
+
+        # --- segue plt.tight_layout() e st.pyplot(fig) normalmente ---
+
       # Define o centro da faixa e uma largura pequena
-        
-        
         
         # --- Plota o potencial e a reta de energia ---
         cor = "blue" if corpo == "Partícula Massiva" else "brown"
@@ -337,23 +412,34 @@ with tab1:
             r_crit, V_crit, tipo_crit = ([], [], [])
 
         added = set()
-        r0 = r_crit[0]
-        if l < 2.0:
-            largura = 0.5
-            
-        elif 2.0 <= l < 3.0:
-            largura = 0.2
-            r0= r0 - 0.2
-        elif 3.0 <= l < 4.0:
-            largura = 0.5
-            
-        elif 4.0 <= l <= 5.0:
-            largura = 0.5
-            
+        if E != None:
 
+            r0 = r_crit[0]
+            if l < 2.0:
+                largura = 0.4
+                r0= r0 - 0.2
+            elif 2.0 <= l < 3.0:
+                largura = 0.4
+                r0= r0 - 0.3
+            elif 3.0 <= l < 4.0:
+                largura = 0.5
+                
+            elif 4.0 <= l <= 5.0:
+                largura = 0.5
+            elif 5.0 <= l <= 6.0:
+                largura = 0.5
+            elif 6.0 <= l <= 7.0:
+                largura = 0.5
+            elif 7.0 <= l <= 8.0:
+                largura = 0.5
+            elif 8.0 <= l <= 9.0:
+                largura = 0.5
+            elif 9.0 <= l <= 10.0:
+                largura = 0.5
+            ax1.axvspan(r0 - largura / 2, r0 + largura / 2, color="cornflowerblue", alpha=0.3, label="Maior concentração de massa")
 
         # Faixa mais fina
-        ax1.axvspan(r0 - largura / 2, r0 + largura / 2, color="cornflowerblue", alpha=0.3, label="Maior concentração de massa")
+        #ax1.axvspan(r0 - largura / 2, r0 + largura / 2, color="cornflowerblue", alpha=0.3, label="Maior concentração de massa")
 
         for rc, Vc, tp in zip(r_crit, V_crit, tipo_crit):
             if tp == "mínimo":
@@ -428,6 +514,18 @@ with tab1:
             )
             cor_traj = "red" if corpo == "Partícula Massiva" else "orange"
             titulo = "Órbita da Partícula" if corpo == "Partícula Massiva" else "Órbita do Fóton"
+            raio_visual = r_plus * 20.0  # mesmo fator de escala do seu X, Y
+            horizonte = Circle(
+                (0, 0),
+                raio_visual,
+                edgecolor="white",
+                facecolor="none",
+                linestyle='--',          # tracejado
+                linewidth=2.5,             # espessura da linha
+                alpha=0.5,
+                label=""
+            )
+            ax2.add_patch(horizonte)
             ax2.plot(X, Y, color=cor_traj, label="Trajetória")
             ax2.set(xlabel="x (escala)", ylabel="y (escala)", title=titulo)
             ax2.axis("equal")
