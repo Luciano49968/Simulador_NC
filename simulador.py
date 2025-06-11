@@ -333,7 +333,7 @@ with tab1:
         if corpo == "Partícula Massiva":
             V_plot = potencial_massiva_nc(r_plot, l, theta)
         else:
-            r_plot = np.linspace(10.1, rst, 1000)
+            r_plot = np.linspace(0.001, rst, 50000)
             V_plot = potencial_foton_nc(r_plot, theta)
 
         # Trunca caso apareçam NaN ou inf em V_plot
