@@ -334,7 +334,7 @@ with tab1:
             V_plot = potencial_massiva_nc(r_plot, l, theta)
         else:
             r_plot = np.linspace(0.001, rst, 50000)
-            V_plot = potencial_foton_nc(r_plot, theta)
+            V_plot = potencial_foton_nc(r_plot, theta * 300)
 
         # Trunca caso apareçam NaN ou inf em V_plot
         invalid_idx = np.where(np.isnan(V_plot) | np.isinf(V_plot))[0]
