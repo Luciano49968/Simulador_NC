@@ -225,7 +225,7 @@ theta = 0.05
 
 # Parâmetros específicos para cada tipo de corpo
 if corpo == "Partícula Massiva":
-    l = st.sidebar.slider("Momento Angular l", 0.1, 5.0, 1.0, 0.01, format="%.1f")
+    l = st.sidebar.slider("Momento Angular l", 0.1, 10.0, 1.0, 0.01, format="%.1f")
     E = st.sidebar.slider("Energia E", 0.01, 1.0, 0.1, 0.01, format="%.2f")
     #norbit = st.sidebar.slider("Escala do ângulo total", 1, 5, 1, 1)
     norbit = 50
